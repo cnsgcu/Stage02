@@ -1,4 +1,4 @@
-package com.api.rottentomatoes.model;
+package api.rottentomatoes.models;
 
 public class Movie {
 	

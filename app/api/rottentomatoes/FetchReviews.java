@@ -1,6 +1,6 @@
-package com.api.rottentomatoes;
+package api.rottentomatoes;
 
-import com.api.rottentomatoes.model.Review;
+import api.rottentomatoes.models.Review;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;

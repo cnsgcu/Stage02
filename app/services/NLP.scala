@@ -8,7 +8,7 @@ import edu.stanford.nlp.dcoref.Dictionaries.MentionType
 import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation
 import edu.stanford.nlp.sentiment.SentimentCoreAnnotations.AnnotatedTree
 import edu.stanford.nlp.dcoref.CorefCoreAnnotations.CorefChainAnnotation
-import nlp.Config
+import global.Config
 
 import scala.collection.JavaConversions._
 
