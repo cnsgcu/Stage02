@@ -1,5 +1,6 @@
 package controllers
 
+import api.rottentomatoes.models.MovieSearchResponse
 import global.Config
 import global.services.NLP
 
@@ -27,30 +28,27 @@ object Application extends Controller
         }
     }
 
-  private[this] implicit val pairSetWrites =
-    new Writes[Set[(String, Int)]] {
-      def writes(set: Set[(String, Int)]): JsValue = JsArray(set.map(Json.toJson(_)).toSeq)
-    }
-
-  private[this] implicit val sentimentWrites =
-    new Writes[Map[String, Set[(String, Int)]]] {
-      def writes(sentiment: Map[String, Set[(String, Int)]]): JsValue =
-        JsObject(
-          sentiment.map {
-            case (topic, opinions) => topic -> Json.toJson(opinions)
-          }.toSeq
-        )
-    }
-
   private[this] implicit val reviewWrites =
     new Writes[(String, Map[String, Set[(String, Int)]])] {
       def writes(pair: (String, Map[String, Set[(String, Int)]])): JsValue =
         pair match {
-          case (review, opinion) =>
+          case (review, sentiments) =>
+            val jsonSentiments = JsArray(
+              sentiments.map {
+                case (topic, opinion) =>
+                  JsObject(
+                    Seq(
+                      "topic" -> JsString(topic),
+                      "opinions" -> Json.toJson(opinion)
+                    )
+                  )
+              }.toSeq
+            )
+
             JsObject(
               Seq(
                 "review" -> JsString(review),
-                "opinion" -> Json.toJson(opinion)
+                "sentiments" -> jsonSentiments
               )
             )
         }
@@ -61,10 +59,12 @@ object Application extends Controller
   }
 
   def search(name: String) = Action {
-    val fetchMovies = new FetchMovies
-    val movies = fetchMovies.getMovies(name)
+    val (fetchMovies, resp) = (new FetchMovies, new MovieSearchResponse)
 
-    Ok(Config.gson.toJson(movies))
+    resp.setQuery(name)
+    resp.setMovies(fetchMovies.getMovies(name))
+
+    Ok(Config.gson.toJson(resp))
   }
 
   def sentiment = Action(parse.json) { request =>

@@ -12,8 +12,36 @@ var Movie = React.createClass({
 
 var Review = React.createClass({
     render: function () {
+        var reviews = this.props.reviews.map(function(review) {
+            var sentiments = review["sentiments"].map(function(sentiment) {
+                var opinions = sentiment["opinions"].map(function(opinion) {
+                    return (
+                        <div>
+                            {opinion["score"]} - {opinion["sentence"]}
+                        </div>
+                    );
+                });
+
+                return (
+                    <div>
+                        <div>{sentiment["topic"]}:</div>
+                        {opinions}
+                    </div>
+                );
+            });
+
+            return (
+                <div className="review">
+                    <div>{review["review"]}</div>
+                    {sentiments}
+                </div>
+            );
+        });
+
         return (
-            <div></div>
+            <div className="review_list">
+                {reviews}
+            </div>
         );
     }
 });
@@ -60,9 +88,7 @@ var MovieList = React.createClass({
                     {movies}
                 </div>
 
-                <div className="review_list">
-                    {this.state.reviews}
-                </div>
+                <Review reviews={this.state.reviews}/>
             </div>
         );
     }
@@ -78,14 +104,19 @@ var MovieReview = React.createClass({
             movieName = this.refs.search.getDOMNode().value;
 
         if (movieName) {
+            self.setState({movies: []});
+
             $.ajax({
                 type: "GET",
                 url: "movie",
                 contentType: "text/html; charset=utf-8",
                 data: {name: movieName},
                 success: function(resp) {
-                    // TODO check if result is from the same query in the search bar
-                    self.setState({movies: JSON.parse(resp).sort(function(lhs, rhs) {return rhs.mYear - lhs.mYear;})});
+                    var rst = JSON.parse(resp);
+
+                    if (rst["query"] === self.refs.search.getDOMNode().value) {
+                        self.setState({movies: rst["movies"].sort(function(lhs, rhs) {return rhs.mYear - lhs.mYear;})});
+                    }
                 }
             });
         } else {
@@ -97,7 +128,7 @@ var MovieReview = React.createClass({
         return (
             <div>
                 <div className="col-lg-7 input-group">
-                    <input onKeyUp={this.handleKeyUp} ref="search" className="form-control" placeholder="Search movie" type="text" />
+                    <input ref="search" onKeyUp={this.handleKeyUp} className="form-control" placeholder="Search movie" type="text" />
 
                     <span className="input-group-btn">
                         <button className="btn btn-info">

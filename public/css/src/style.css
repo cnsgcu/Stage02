@@ -34,7 +34,13 @@ div.col-lg-7.input-group
 
 .movie h3
 {
+    font-size: 20px;
     font-weight: normal;
 
     margin-bottom: 0;
+}
+
+.review
+{
+    padding-bottom: 20px;
 }
