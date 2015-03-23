@@ -21,7 +21,7 @@ object Application extends Controller
             JsObject(
               Seq(
                 "score" -> JsNumber(score),
-                "opinion" -> JsString(opinion)
+                "sentence" -> JsString(opinion)
               )
             )
         }
@@ -42,6 +42,20 @@ object Application extends Controller
         )
     }
 
+  private[this] implicit val reviewWrites =
+    new Writes[(String, Map[String, Set[(String, Int)]])] {
+      def writes(pair: (String, Map[String, Set[(String, Int)]])): JsValue =
+        pair match {
+          case (review, opinion) =>
+            JsObject(
+              Seq(
+                "review" -> JsString(review),
+                "opinion" -> Json.toJson(opinion)
+              )
+            )
+        }
+    }
+
   def index = Action {
     Ok(views.html.index())
   }
@@ -57,21 +71,12 @@ object Application extends Controller
     (request.body \ "id").asOpt[String] map {
       movieId =>
         val fetchReviews = new FetchReviews
-        val reviews = fetchReviews.getReviews(movieId).toList
+        val reviews = for (review <- fetchReviews.getReviews(movieId))
+          yield (review.getQuote, NLP.sentimentAnalyze(review.getQuote))
 
-        for (i <- 0 until reviews.size) {
-          println(s"$i - ${reviews.get(i).getQuote}\n${NLP.sentimentAnalyze(reviews.get(i).getQuote)}\n")
-        }
+        Logger.info(s"Movie $movieId has ${reviews.length} reviews.")
 
-        val message =
-          """
-            |Tim Burton's Batman wasn't a bad movie.
-            |It was entertaining and had a nice comic-book feel to it, but it struck me as being quite formulaic.
-            |Some scenes worked for me, but others felt forced and oddly out of place.
-            |I imagine Tim Burton had some of the actors, like Jack Palance, overact on purpose, to give the movie a similar feel to the Batman TV show from the 1960s; however, the result felt more like a high-school play than a movie.
-          """.stripMargin
-
-        Ok(Json.toJson(NLP.sentimentAnalyze(message)))
+        Ok(Json.toJson(reviews.filter(_._2.nonEmpty).toSeq))
     } getOrElse {
       BadRequest
     }

@@ -1,22 +1,68 @@
 var Movie = React.createClass({
     render: function () {
         return (
-            <div className="movie">
-                {this.props.title}
+            <div className="movie" onClick={this.props.clickHandler}>
+                <h3>{this.props.title} - {this.props.year}</h3>
+
+                {this.props.children}
             </div>
         );
     }
 });
 
-var MovieList = React.createClass({
+var Review = React.createClass({
     render: function () {
-        var movies = this.props.data.map(function(movie) {
-            return (<Movie title={movie.mTitle}>{movie.mTitle}</Movie>);
+        return (
+            <div></div>
+        );
+    }
+});
+
+var MovieList = React.createClass({
+    getReviews: function(movieId) {
+        var self = this;
+
+        $.ajax({
+            type: "POST",
+            url: "movie/review",
+            contentType: "text/json",
+            data: JSON.stringify({id: movieId}),
+            success: function(resp) {
+                self.setState({reviews: resp});
+            }
         });
+    },
+
+    getInitialState: function() {
+        return {reviews: []};
+    },
+
+    render: function () {
+        var self = this,
+            movies = this.props.data.map(function(movie) {
+                var synopsis = "No synopsis.",
+                    boundClick = self.getReviews.bind(self, movie.mId);
+
+                if (movie.mSynopsis) {
+                    synopsis = movie.mSynopsis;
+                }
+
+                return (
+                    <Movie clickHandler={boundClick} title={movie.mTitle} year={movie.mYear}>
+                        {synopsis}
+                    </Movie>
+                );
+            });
 
         return (
-            <div>
-                {movies}
+            <div className="result_container">
+                <div className="movie_list">
+                    {movies}
+                </div>
+
+                <div className="review_list">
+                    {this.state.reviews}
+                </div>
             </div>
         );
     }
@@ -33,12 +79,13 @@ var MovieReview = React.createClass({
 
         if (movieName) {
             $.ajax({
-                url: "movie",
                 type: "GET",
+                url: "movie",
                 contentType: "text/html; charset=utf-8",
                 data: {name: movieName},
                 success: function(resp) {
-                    self.setState({movies: JSON.parse(resp)});
+                    // TODO check if result is from the same query in the search bar
+                    self.setState({movies: JSON.parse(resp).sort(function(lhs, rhs) {return rhs.mYear - lhs.mYear;})});
                 }
             });
         } else {
