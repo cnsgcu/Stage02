@@ -21,11 +21,27 @@ object Application extends Controller
           case (opinion, score) =>
             JsObject(
               Seq(
-                "score" -> JsNumber(score),
+                "score"    -> JsNumber(score),
                 "sentence" -> JsString(opinion)
               )
             )
         }
+    }
+
+  private[this] implicit val sentimentWrites =
+    new Writes[Map[String, Set[(String, Int)]]] {
+      def writes(sentiments: Map[String, Set[(String, Int)]]): JsValue =
+        JsArray(
+          sentiments.map {
+            case (topic, opinion) =>
+              JsObject(
+                Seq(
+                  "topic"    -> JsString(topic),
+                  "opinions" -> Json.toJson(opinion)
+                )
+              )
+          }.toSeq
+        )
     }
 
   private[this] implicit val reviewWrites =
@@ -33,22 +49,10 @@ object Application extends Controller
       def writes(pair: (String, Map[String, Set[(String, Int)]])): JsValue =
         pair match {
           case (review, sentiments) =>
-            val jsonSentiments = JsArray(
-              sentiments.map {
-                case (topic, opinion) =>
-                  JsObject(
-                    Seq(
-                      "topic" -> JsString(topic),
-                      "opinions" -> Json.toJson(opinion)
-                    )
-                  )
-              }.toSeq
-            )
-
             JsObject(
               Seq(
-                "review" -> JsString(review),
-                "sentiments" -> jsonSentiments
+                "review"     -> JsString(review),
+                "sentiments" -> Json.toJson(sentiments)
               )
             )
         }
