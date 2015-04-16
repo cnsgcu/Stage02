@@ -1,20 +1,17 @@
 package controllers
 
-import java.util.Date
-
 import api.rottentomatoes.models.MovieSearchResponse
 import global.Config
 import play.api.libs.EventSource
-import play.api.libs.concurrent.Promise
-import play.api.libs.iteratee.{Enumeratee, Iteratee, Enumerator, Concurrent}
+import play.api.libs.iteratee.{Enumeratee, Enumerator}
 import services.NLP
 import play.api.mvc._
-import play.api.Logger
+import play.api.{Play, Logger}
 import play.api.libs.json._
 
-import scala.concurrent.duration._
 import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext.Implicits.global
+import play.api.Play.current
 
 import api.rottentomatoes.{FetchReviews, FetchMovies}
 

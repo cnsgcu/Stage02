@@ -6,6 +6,7 @@ import org.apache.spark.mllib.clustering.LDA
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
+import play.api.Play
 
 import scala.collection.mutable
 
@@ -18,8 +19,8 @@ object LDA
     val conf = new SparkConf().setMaster("local[4]").setAppName("LDA")
     val sc = new SparkContext(conf)
 
-    val tokenizer = new SimpleTokenizer(sc, getClass.getResource("/lda/stopwords.txt").getFile)
-    val plotsRDD: RDD[String] = sc.textFile(getClass.getResource("/lda/train.txt").getFile)
+    val tokenizer = new SimpleTokenizer(sc, Play.getFile("/conf/lda/stopwords.txt").getAbsolutePath)
+    val plotsRDD: RDD[String] = sc.textFile(Play.getFile("/conf/lda/train/0_3.txt").getAbsolutePath)
 
     val tokenized: RDD[(Long, IndexedSeq[String])] = plotsRDD.zipWithIndex().map { case (text, id) =>
       id -> tokenizer.getWords(text)

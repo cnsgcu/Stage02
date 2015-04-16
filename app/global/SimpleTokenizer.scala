@@ -12,6 +12,8 @@ import scala.collection.JavaConversions._
 
 private class SimpleTokenizer(sc: SparkContext, stopwordFile: String) extends Serializable
 {
+  private[this] val minWordLength = 1
+
   private[this] val stopwords: Set[String] =
     if (stopwordFile.isEmpty) {
       Set.empty[String]
@@ -19,8 +21,6 @@ private class SimpleTokenizer(sc: SparkContext, stopwordFile: String) extends Se
       val stopwordText = sc.textFile(stopwordFile).collect()
       stopwordText.flatMap(_.stripMargin.split("\\s+")).toSet
     }
-
-  private[this] val minWordLength = 1
 
   def getWords(text: String): IndexedSeq[String] = {
     val props = new Properties
