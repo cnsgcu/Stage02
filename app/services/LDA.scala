@@ -1,16 +1,16 @@
-package global
+package services
 
-import global.SimpleTokenizer
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.mllib.clustering.LDA
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 import play.api.Play
+import play.api.Play.current
 
 import scala.collection.mutable
 
-object LDA
+class Lda
 {
   def run(): Unit = {
     Logger.getLogger("org").setLevel(Level.OFF)
@@ -20,7 +20,7 @@ object LDA
     val sc = new SparkContext(conf)
 
     val tokenizer = new SimpleTokenizer(sc, Play.getFile("/conf/lda/stopwords.txt").getAbsolutePath)
-    val plotsRDD: RDD[String] = sc.textFile(Play.getFile("/conf/lda/train/0_3.txt").getAbsolutePath)
+    val plotsRDD: RDD[String] = sc.textFile(Play.getFile("/conf/lda/news.txt").getAbsolutePath)
 
     val tokenized: RDD[(Long, IndexedSeq[String])] = plotsRDD.zipWithIndex().map { case (text, id) =>
       id -> tokenizer.getWords(text)

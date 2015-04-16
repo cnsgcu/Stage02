@@ -12,7 +12,7 @@ import global.Config
 
 import scala.collection.JavaConversions._
 
-object NLP
+object Nlp
 {
   private[this] def getMentions(graph: Map[Integer, CorefChain]): Iterable[Iterable[CorefMention]] =
     graph filter {

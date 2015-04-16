@@ -4,14 +4,13 @@ import api.rottentomatoes.models.MovieSearchResponse
 import global.Config
 import play.api.libs.EventSource
 import play.api.libs.iteratee.{Enumeratee, Enumerator}
-import services.NLP
+import services.Nlp
 import play.api.mvc._
-import play.api.{Play, Logger}
+import play.api.Logger
 import play.api.libs.json._
 
 import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext.Implicits.global
-import play.api.Play.current
 
 import api.rottentomatoes.{FetchReviews, FetchMovies}
 
@@ -78,7 +77,7 @@ object Application extends Controller
 
   def sentimentStream(movieId: String) = Action {
     val reviews = reviewFetcher.getReviews(movieId)
-    val reviewStream = reviews.toStream.map(r => (r.getQuote, NLP.sentimentAnalyze(r.getQuote)))
+    val reviewStream = reviews.toStream.map(r => (r.getQuote, Nlp.sentimentAnalyze(r.getQuote)))
     val rEnum = Enumerator.unfold(reviewStream)(rs => Some(rs.tail, Json.toJson(rs.head))) through Enumeratee.take(reviews.size())
 
     Ok.chunked(rEnum andThen Enumerator(JsString("EOS")) through EventSource())
@@ -89,7 +88,7 @@ object Application extends Controller
     (request.body \ "id").asOpt[String] map {
       movieId =>
         val reviews = for (review <- reviewFetcher.getReviews(movieId))
-          yield (review.getQuote, NLP.sentimentAnalyze(review.getQuote))
+          yield (review.getQuote, Nlp.sentimentAnalyze(review.getQuote))
 
         Logger.info(s"Movie $movieId has ${reviews.length} reviews.")
 

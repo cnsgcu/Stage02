@@ -1,4 +1,4 @@
-package global
+package services
 
 import java.io.Serializable
 import java.util.Properties
