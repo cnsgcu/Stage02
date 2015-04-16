@@ -1,6 +1,6 @@
-html
+html, body
 {
-    padding: 5px;
+    height: 100%;
 }
 
 div.col-lg-7.input-group

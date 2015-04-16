@@ -1,151 +1,173 @@
-var Movie = React.createClass({
-    render: function () {
-        return (
-            <div className="movie" onClick={this.props.clickHandler}>
-                <h3>{this.props.title} - {this.props.year}</h3>
+(function() {
+    var sse;
 
-                {this.props.children}
-            </div>
-        );
-    }
-});
+    var Movie = React.createClass({
+        render: function () {
+            return (
+                <div className="movie" onClick={this.props.clickHandler}>
+                    <h3>{this.props.title} - {this.props.year}</h3>
 
-var Review = React.createClass({
-    render: function () {
-        var reviews = this.props.reviews.map(function(review) {
-            var sentiments = review["sentiments"].map(function(sentiment) {
-                var opinions = sentiment["opinions"].map(function(opinion) {
+                    {this.props.children}
+                </div>
+            );
+        }
+    });
+
+    var Review = React.createClass({
+        render: function () {
+            var reviews = this.props.reviews.map(function(review) {
+                var sentiments = review["sentiments"].map(function(sentiment) {
+                    var opinions = sentiment["opinions"].map(function(opinion) {
+                        return (
+                            <div>
+                                {opinion["score"]} - {opinion["sentence"]}
+                            </div>
+                        );
+                    });
+
                     return (
                         <div>
-                            {opinion["score"]} - {opinion["sentence"]}
+                            <div>{sentiment["topic"]}:</div>
+                            {opinions}
                         </div>
                     );
                 });
 
                 return (
-                    <div>
-                        <div>{sentiment["topic"]}:</div>
-                        {opinions}
+                    <div className="review">
+                        <div>{review["review"]}</div>
+                        {sentiments}
                     </div>
                 );
             });
 
             return (
-                <div className="review">
-                    <div>{review["review"]}</div>
-                    {sentiments}
+                <div className="review_list">
+                    {reviews}
                 </div>
             );
-        });
-
-        return (
-            <div className="review_list">
-                {reviews}
-            </div>
-        );
-    }
-});
-
-var MovieList = React.createClass({
-    getReviews: function(movieId) {
-        var self = this;
-
-        $.ajax({
-            type: "POST",
-            url: "movie/review",
-            contentType: "text/json",
-            data: JSON.stringify({id: movieId}),
-            success: function(resp) {
-                self.setState({reviews: resp});
-            }
-        });
-    },
-
-    getInitialState: function() {
-        return {reviews: []};
-    },
-
-    render: function () {
-        var self = this,
-            movies = this.props.data.map(function(movie) {
-                var synopsis = "No synopsis.",
-                    boundClick = self.getReviews.bind(self, movie.mId);
-
-                if (movie.mSynopsis) {
-                    synopsis = movie.mSynopsis;
-                }
-
-                return (
-                    <Movie clickHandler={boundClick} title={movie.mTitle} year={movie.mYear}>
-                        {synopsis}
-                    </Movie>
-                );
-            });
-
-        return (
-            <div className="result_container">
-                <div className="movie_list">
-                    {movies}
-                </div>
-
-                <Review reviews={this.state.reviews}/>
-            </div>
-        );
-    }
-});
-
-var MovieReview = React.createClass({
-    getInitialState: function() {
-        return {movies: []};
-    },
-
-    handleKeyUp: function() {
-        var self = this,
-            movieName = this.refs.search.getDOMNode().value;
-
-        if (movieName) {
-            self.setState({movies: []});
-
-            $.ajax({
-                type: "GET",
-                url: "movie",
-                contentType: "text/html; charset=utf-8",
-                data: {name: movieName},
-                success: function(resp) {
-                    var rst = JSON.parse(resp);
-
-                    if (rst["query"] === self.refs.search.getDOMNode().value) {
-                        self.setState({movies: rst["movies"].sort(function(lhs, rhs) {return rhs.mYear - lhs.mYear;})});
-                    }
-                }
-            });
-        } else {
-            self.setState({movies: []});
         }
-    },
+    });
 
-    render: function() {
-        return (
-            <div>
-                <div className="col-lg-7 input-group">
-                    <input ref="search" onKeyUp={this.handleKeyUp} className="form-control" placeholder="Search movie" type="text" />
+    var MovieList = React.createClass({
+        getReviews: function(movieId) {
+            var self = this;
 
-                    <span className="input-group-btn">
-                        <button className="btn btn-info">
-                            <span className="glyphicon glyphicon-search"></span>
-                        </button>
-                    </span>
+            self.setState({reviews: []});
+
+            if (sse) {
+                sse.close();
+            }
+
+            sse = new EventSource("/review/" + movieId);
+
+            sse.onmessage = function(msg) {
+                var data = JSON.parse(msg.data);
+
+                if(data === "EOS") {
+                    sse.close();
+                } else {
+                    self.setState({reviews: self.state.reviews.concat([data])});
+                }
+            };
+
+            //$.ajax({
+            //    type: "POST",
+            //    url: "movie/review",
+            //    contentType: "text/json",
+            //    data: JSON.stringify({id: movieId}),
+            //    success: function(resp) {
+            //        self.setState({reviews: resp});
+            //    }
+            //});
+        },
+
+        getInitialState: function() {
+            return {reviews: []};
+        },
+
+        render: function () {
+            var self = this,
+                movies = this.props.data.map(function(movie) {
+                    var synopsis = "No synopsis.",
+                        boundClick = self.getReviews.bind(self, movie.mId);
+
+                    if (movie.mSynopsis) {
+                        synopsis = movie.mSynopsis;
+                    }
+
+                    return (
+                        <Movie clickHandler={boundClick} title={movie.mTitle} year={movie.mYear}>
+                            {synopsis}
+                        </Movie>
+                    );
+                });
+
+            return (
+                <div className="result_container">
+                    <div className="movie_list">
+                        {movies}
+                    </div>
+
+                    <Review reviews={this.state.reviews}/>
                 </div>
+            );
+        }
+    });
 
-                <MovieList data={this.state.movies} />
-            </div>
+    var MovieReview = React.createClass({
+        getInitialState: function() {
+            return {movies: []};
+        },
+
+        handleKeyUp: function() {
+            var self = this,
+                movieName = this.refs.search.getDOMNode().value;
+
+            if (movieName) {
+                self.setState({movies: []});
+
+                $.ajax({
+                    type: "GET",
+                    url: "movie",
+                    contentType: "text/html; charset=utf-8",
+                    data: {name: movieName},
+                    success: function(resp) {
+                        var rst = JSON.parse(resp);
+
+                        if (rst["query"] === self.refs.search.getDOMNode().value) {
+                            self.setState({movies: rst["movies"].sort(function(lhs, rhs) {return rhs.mYear - lhs.mYear;})});
+                        }
+                    }
+                });
+            } else {
+                self.setState({movies: []});
+            }
+        },
+
+        render: function() {
+            return (
+                <div>
+                    <div className="col-lg-7 input-group">
+                        <input ref="search" onKeyUp={this.handleKeyUp} className="form-control" placeholder="Search movie" type="text" />
+
+                        <span className="input-group-btn">
+                            <button className="btn btn-info">
+                                <span className="glyphicon glyphicon-search"></span>
+                            </button>
+                        </span>
+                    </div>
+
+                    <MovieList data={this.state.movies} />
+                </div>
+            );
+        }
+    });
+
+    $(document).ready(function() {
+        React.render(
+            <MovieReview />,
+            document.getElementById("app")
         );
-    }
-});
-
-$(document).ready(function() {
-    React.render(
-        <MovieReview />,
-        document.getElementById("app")
-    );
-});
+    });
+})();

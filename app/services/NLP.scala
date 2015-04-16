@@ -1,4 +1,4 @@
-package global.services
+package services
 
 import edu.stanford.nlp.util.CoreMap
 import edu.stanford.nlp.dcoref.CorefChain

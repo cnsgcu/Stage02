@@ -6,6 +6,8 @@
 GET         /                    controllers.Application.index
 GET         /movie               controllers.Application.search(name: String)
 
+GET         /review/:movieId     controllers.Application.sentimentStream(movieId: String)
+
 POST        /movie/review        controllers.Application.sentiment
 
 # Map static resources from the /public folder to the /assets URL path
